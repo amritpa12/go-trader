@@ -42,7 +42,7 @@ func (ss *StatusServer) Start(port int) {
 	mux.HandleFunc("/history", dash.HandleHistory)
 	mux.HandleFunc("/", dash.HandleDashboard)
 
-	addr := fmt.Sprintf("localhost:%d", port)
+	addr := fmt.Sprintf("0.0.0.0:%d", port)
 	go func() {
 		fmt.Printf("[server] Dashboard at http://%s/\n", addr)
 		fmt.Printf("[server] Status API at http://%s/status\n", addr)
