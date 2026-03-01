@@ -11,12 +11,23 @@ import (
 // maxTradeHistory is the maximum number of trades to retain per strategy.
 const maxTradeHistory = 1000
 
+// maxValueHistory caps the number of portfolio snapshots stored.
+const maxValueHistory = 4320 // ~30 days at 5-min cycles
+
+// ValueSnapshot records portfolio value at a point in time.
+type ValueSnapshot struct {
+	Timestamp  time.Time          `json:"t"`
+	TotalValue float64            `json:"v"`
+	ByStrategy map[string]float64 `json:"s,omitempty"`
+}
+
 // AppState holds all persistent state across restarts.
 type AppState struct {
 	CycleCount    int                       `json:"cycle_count"`
 	LastCycle     time.Time                 `json:"last_cycle"`
 	Strategies    map[string]*StrategyState `json:"strategies"`
 	PortfolioRisk PortfolioRiskState        `json:"portfolio_risk"`
+	ValueHistory  []ValueSnapshot           `json:"value_history,omitempty"`
 }
 
 // StrategyState is the per-strategy persistent state.
@@ -70,6 +81,9 @@ func LoadState(path string) (*AppState, error) {
 	}
 	if state.Strategies == nil {
 		state.Strategies = make(map[string]*StrategyState)
+	}
+	if state.ValueHistory == nil {
+		state.ValueHistory = []ValueSnapshot{}
 	}
 	// Fix nil maps
 	for _, s := range state.Strategies {
@@ -214,6 +228,11 @@ func SaveState(path string, state *AppState) error {
 		if len(s.TradeHistory) > maxTradeHistory {
 			s.TradeHistory = s.TradeHistory[len(s.TradeHistory)-maxTradeHistory:]
 		}
+	}
+
+	// Trim value history
+	if len(state.ValueHistory) > maxValueHistory {
+		state.ValueHistory = state.ValueHistory[len(state.ValueHistory)-maxValueHistory:]
 	}
 
 	data, err := json.MarshalIndent(state, "", "  ")

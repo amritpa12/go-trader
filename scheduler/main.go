@@ -461,6 +461,21 @@ func main() {
 			mu.RUnlock()
 		}
 
+		// Record portfolio value snapshot for history chart
+		mu.Lock()
+		snapshot := ValueSnapshot{
+			Timestamp:  time.Now().UTC(),
+			TotalValue: totalValue,
+			ByStrategy: make(map[string]float64),
+		}
+		for _, sc := range cfg.Strategies {
+			if s, ok := state.Strategies[sc.ID]; ok {
+				snapshot.ByStrategy[sc.ID] = PortfolioValue(s, prices)
+			}
+		}
+		state.ValueHistory = append(state.ValueHistory, snapshot)
+		mu.Unlock()
+
 		// Save state after each cycle
 		mu.Lock()
 		state.LastCycle = time.Now().UTC()

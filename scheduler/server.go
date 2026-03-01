@@ -37,9 +37,15 @@ func (ss *StatusServer) Start(port int) {
 	mux.HandleFunc("/status", ss.handleStatus)
 	mux.HandleFunc("/health", ss.handleHealth)
 
+	dash := NewDashboardHandler(ss.state, ss.mu)
+	mux.HandleFunc("/trades", dash.HandleTrades)
+	mux.HandleFunc("/history", dash.HandleHistory)
+	mux.HandleFunc("/", dash.HandleDashboard)
+
 	addr := fmt.Sprintf("localhost:%d", port)
 	go func() {
-		fmt.Printf("[server] Status endpoint at http://%s/status\n", addr)
+		fmt.Printf("[server] Dashboard at http://%s/\n", addr)
+		fmt.Printf("[server] Status API at http://%s/status\n", addr)
 		if err := http.ListenAndServe(addr, mux); err != nil {
 			fmt.Printf("[server] HTTP server error: %v\n", err)
 		}
